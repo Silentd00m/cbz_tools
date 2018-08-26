@@ -1,116 +1,21 @@
 #!/usr/bin/python3
 
 import os
-import cbzlib
+import lib.cbzlib
 import argparse
 import wand.image
 
 
-def modify_image(input_data: str, colourspace: str = "rgb", depth: int = 8,
-                 output_format: str = "png", resize=False, keep_aspect=False,
-                 resize_filter: wand.image.FILTER_TYPES='lanczos2sharp',
-                 compression_quality: int = None):
-    with wand.image.Image(blob=input_data) as image:
-        image.format = output_format
-
-        if colourspace == "grey":
-            image.type = 'grayscale'
-
-        image.depth = depth
-
-        if resize and keep_aspect:
-            image.transform(resize + ">")
-        elif resize:
-            width, height = resize.split("x")
-
-            image.resize(int(width), int(height))
-
-        if compression_quality:
-            image.compression_quality = compression_quality
-
-        return image.make_blob()
+def create_cbz(args):
+    lib.cbzlib.create_cbz(
+        args.input, args.output[0], args.format, args.colourspace, args.depth,
+        args.resize, args.keep_aspect, args.quality, args.verbose)
 
 
 def merge_cbzs(args):
-    counter = 1
-
-    with cbzlib.cbz_file(args.output[0], "w") as of:
-        for cbz in input_files:
-            with cbzlib.cbz_file(cbz, "r") as _if:
-                for image in _if.list_contents():
-                    filename = (str(counter).zfill(4) + "." +
-                                image.split(".")[-1])
-
-                    if args.verbose:
-                        print("Adding file '" + cbz + "/" + image + "' as '" +
-                              filename + "'")
-
-                    if (args.depth or args.quality or args.resize or
-                            args.colourspace or args.format):
-                        of.add_bytes_as_file(filename, modify_image(
-                            _if.read(image), colourspace=args.colourspace,
-                            depth=args.depth, resize=args.resize,
-                            keep_aspect=args.keep_aspect,
-                            compression_quality=args.quality))
-                    else:
-                        of_add_bytes_as_file(_if.read(image))
-
-                    counter = counter + 1
-
-
-def create_cbz(args):
-    counter = 1
-
-    with cbzlib.cbz_file(args.output[0], "w") as of:
-        for path in args.input:
-            if os.path.isdir(path):
-                for image in [f for f in sorted(os.listdir(path))
-                              if (os.path.isfile(os.path.join(path, f)) and
-                                  str(f).lower().endswith(tuple([".png", ".jpg",
-                                                                 ".jpeg"])))]:
-                    with open(os.path.join(path, image)) as _if:
-                        if (args.depth or args.quality or args.resize or
-                                args.colourspace or args.format):
-                            of.add_bytes_as_file(
-                                str(counter).zfill(4) +
-                                "." + args.format, modify_image(
-                                    open(os.path.join(
-                                        path, image)).read(),
-                                    colourspace=args.colourspace,
-                                    depth=args.depth,
-                                    resize=args.resize,
-                                    keep_aspect=args.keep_aspect,
-                                    compression_quality=args.quality))
-                        else:
-                            of.add_bytes_as_file(_if.read(image),
-                                                 str(counter).zfill(4) +
-                                                 "." + image.split(".")[-1])
-
-                    if args.verbose:
-                        print("Adding file '" + path + "' as '" +
-                              str(counter).zfill(4) + "." + ext + "'")
-
-                    counter = counter + 1
-            elif (os.path.isfile(path) and
-                  str(path).lower().endswith(tuple([".png", ".jpg", ".jpeg"]))):
-                if (args.depth or args.quality or args.resize or
-                        args.colourspace or args.format):
-                    of.add_bytes_as_file(
-                        str(counter).zfill(4) +
-                        "." + args.format, modify_image(
-                            open(path, "rb").read(),
-                            colourspace=args.colourspace,
-                            depth=args.depth,
-                            resize=args.resize,
-                            keep_aspect=args.keep_aspect,
-                            compression_quality=args.quality))
-
-                else:
-                    ext = path.split(".")[-1]
-
-                    of.add_file(path, str(counter) + "." + ext)
-
-                counter = counter + 1
+    lib.cbzlib.create_cbz(
+        args.input, args.output[0], args.format, args.colourspace, args.depth,
+        args.resize, args.keep_aspect, args.quality, args.verbose)
 
 
 if __name__ == "__main__":
